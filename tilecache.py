@@ -1,5 +1,7 @@
 '''
 How to use:
+    0) Go to http://www.mapcacher.com/ and generate a .map file. Use the "OpenStreetMaps.org Maps
+    (Mapnik Renderer)" option.
     1) Download one or more .map files into ./input/
     2) Run cacher.py.
     3) The downloaded images will be written into ./output/
@@ -17,9 +19,6 @@ API_KEY = "8ee2a50541944fb9bcedded5165f09d9"        # This needs to be replaced
 STYLE_ID = 1
 RESOLUTION = 256
 
-existingTiles = set()   # we use this to detect (and then ignore) duplicate tiles. We never actually read from
-                        # this set, aside from checking for membership.
-
 class Tile:
 
     def __init__(self, zoom, x, y):
@@ -31,10 +30,17 @@ class Tile:
     def cache(self):
         ''' This downloads the file and writes it to disk. '''
 
-        print 'downloading %s' %self.url()
+        print self.url()
 
-        outputFolder = "%s/%i/%i/" %(OUTPUT_ROOT_FOLDER, self.zoom, self.x)
+        tileSetRoot = "%s/%i-%i/" %(OUTPUT_ROOT_FOLDER, STYLE_ID, RESOLUTION)
+        outputFolder = "%s/%i/%i/" %(tileSetRoot, self.zoom, self.x)
         outputFilename = "%i.png" %self.y
+
+        if os.path.exists(outputFolder+outputFilename):
+            # we assume that if the file exists, then it was downloaded in the past (i.e. assume that
+            # it's not corrupted or a renamed Word document, etc). Note that this also catches duplicates
+            # in the same batch.
+            return
 
         if not os.path.exists(outputFolder):    # create the output folder if it doesn't exist.
             os.makedirs(outputFolder)           # makedirs is recursive; it makes *all* required folders on the path.
@@ -97,10 +103,7 @@ class Plane:
         
         for x in range(self.southWest.x, self.northEast.x+1):       # the +1 makes the range inclusive: range(5,5) gives [], but we want [5].
             for y in range(self.northEast.y, self.southWest.y+1):
-                tileTuple = (self.zoom, x, y)
-                if tileTuple not in existingTiles:
-                    existingTiles.add(tileTuple)
-                    yield Tile(self.zoom, x, y)
+                yield Tile(self.zoom, x, y)
 
     def __str__(self):
         return "%i, (x: %i, y: %i), (x: %i, y: %i)" %(self.zoom, self.southWest.x, self.southWest.y, self.northEast.x, self.northEast.y)
@@ -169,3 +172,6 @@ for mapFile in MapFolder(INPUT_FOLDER).iterate():
                 #time.sleep(random.uniform(0.1, 3.0))   # uncomment this to throttle the requests.
 
 print 'done.'
+
+
+
