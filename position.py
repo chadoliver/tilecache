@@ -57,8 +57,8 @@ class LongitudeRange:
 
     def __init__(self, positionA, positionB):
 
-        self.start = positionA.latitude
-        self.end = positionB.latitude
+        self.start = positionA.longitude
+        self.end = positionB.longitude
 
     def atZoom(self, zoom):
         ''' This is an iterator that generates y-coordinates between the start and end points, for a
